@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud IAM Zero-Trust — GCP, Microsoft Azure Entra &amp; AWS Privilege Escalation Auditor</title>
+  <style>
+    :root { --bg:#060a14; --card:#0f1626; --in:#080d18; --bd:#22304a; --tx:#f8fafc; --mut:#94a3b8; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--tx); min-height:100vh; padding:24px 18px; background-image:radial-gradient(circle at 12% 0%,rgba(66,133,244,0.16),transparent 40%),radial-gradient(circle at 88% 8%,rgba(0,120,212,0.16),transparent 40%); }
+    .wrap { max-width:1200px; margin:0 auto; }
+    .hero { background:linear-gradient(135deg,rgba(66,133,244,0.18),rgba(0,120,212,0.18)); border:1px solid rgba(56,189,248,0.45); border-radius:16px; padding:22px 26px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+    .hero h1 { font-size:1.6rem; font-weight:800; margin-bottom:4px; }
+    .hero p { color:var(--mut); font-size:0.9rem; max-width:740px; }
+    .btn { background:linear-gradient(135deg,#4285f4,#0078d4); color:#fff; border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.81rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+    .btn-ghost { background:var(--in); border:1px solid var(--bd); color:#e2e8f0; }
+    .btn-ok { background:linear-gradient(135deg,#10b981,#0ea5e9); color:#060a14; font-weight:800; }
+    .grid { display:grid; grid-template-columns:1fr 1.1fr; gap:16px; }
+    @media(max-width:920px){ .grid{ grid-template-columns:1fr; } }
+    .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:18px; margin-bottom:16px; }
+    .card h2 { font-size:0.96rem; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+    textarea { width:100%; background:var(--in); border:1px solid var(--bd); color:#e2e8f0; border-radius:8px; padding:12px; font-family:Consolas,monospace; font-size:0.81rem; line-height:1.5; }
+    .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .tab { padding:6px 12px; border-radius:7px; border:1px solid var(--bd); background:var(--in); color:var(--mut); font-weight:700; cursor:pointer; font-size:0.79rem; }
+    .tab.active { background:#38bdf8; color:#060a14; border-color:#38bdf8; }
+    pre { background:var(--in); border:1px solid var(--bd); border-radius:8px; padding:14px; font-family:Consolas,monospace; font-size:0.79rem; color:#7dd3fc; white-space:pre-wrap; max-height:310px; overflow:auto; }
+    .hit { background:var(--in); border:1px solid #1e293b; border-left:4px solid #ef4444; padding:10px 13px; border-radius:8px; margin-bottom:8px; font-size:0.82rem; }
+    .fix { color:#34d399; font-size:0.77rem; margin-top:4px; }
+    .badge { padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:800; background:rgba(239,68,68,0.2); color:#f87171; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1 data-i="title">☁️ Cloud IAM Zero-Trust — GCP, Microsoft Azure &amp; AWS Privilege Auditor</h1>
+        <p data-i="sub">Audit <strong>Google Cloud (GCP IAM)</strong>, <strong>Microsoft Azure (RBAC / Entra ID)</strong> &amp; <strong>AWS IAM</strong> policies for privilege escalation paths — and export hardened <strong>Azure Bicep</strong>, <strong>GCP Terraform</strong>, <strong>Microsoft Sentinel KQL</strong> &amp; <strong>Google SecOps YARA-L</strong> rules.</p>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="langBtn">🌐 EN / PT / ES</button>
+        <a href="https://github.com/WallisonWS/cloud-iam-zero-trust" target="_blank" class="btn">⭐ Star on GitHub</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>
+          <span>📄 Paste IAM Policy JSON (<span id="scoreLbl" style="color:#f87171;">Score: 15/100</span>)</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-ghost" onclick="loadP('gcp')">Google Cloud</button>
+            <button class="btn btn-ghost" onclick="loadP('azure')">Microsoft Azure</button>
+            <button class="btn btn-ghost" onclick="loadP('aws')">AWS IAM</button>
+          </div>
+        </h2>
+        <textarea id="polIn" rows="13"></textarea>
+        <div id="hitsBox" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <h2>
+          <span>🛡️ Hardened IaC &amp; SIEM Detection Rules (Sentinel KQL / Chronicle YARA-L)</span>
+          <button class="btn btn-ok" onclick="navigator.clipboard.writeText(document.getElementById('outCode').textContent)">📋 Copy</button>
+        </h2>
+        <div class="tabs" id="outTabs">
+          <button class="tab active" data-m="kql">Microsoft Sentinel (KQL)</button>
+          <button class="tab" data-m="yaral">Google SecOps (YARA-L)</button>
+          <button class="tab" data-m="bicep">Azure Bicep (Least-Priv)</button>
+          <button class="tab" data-m="tf">GCP Terraform (BeyondCorp)</button>
+        </div>
+        <pre id="outCode"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SAMPLES = {
+      gcp: JSON.stringify({
+        bindings: [
+          { role: "roles/owner", members: ["serviceAccount:ci-bot@prod-proj.iam.gserviceaccount.com"] },
+          { role: "roles/storage.objectViewer", members: ["allUsers"] }
+        ],
+        customPermissions: ["iam.serviceAccounts.actAs", "iam.serviceAccounts.getAccessToken"]
+      }, null, 2),
+      azure: JSON.stringify({
+        Name: "Overprivileged CI Role",
+        Actions: ["*", "Microsoft.Authorization/roleAssignments/write"],
+        NotActions: [],
+        AssignableScopes: ["/"]
+      }, null, 2),
+      aws: JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [{ Effect: "Allow", Action: ["*", "iam:PassRole", "iam:AttachRolePolicy"], Resource: "*" }]
+      }, null, 2)
+    };
+
+    const RULES = [
+      ['GCP-IAM-001','GCP','Primitive Owner/Editor Role Assigned',30,/"roles\/(?:owner|editor)"/i,'Replace roles/owner with granular predefined/custom roles + IAM Conditions.'],
+      ['GCP-IAM-002','GCP','Service Account Impersonation (actAs / getAccessToken)',25,/iam\.serviceAccounts\.(?:actAs|getAccessToken|signBlob)/i,'Scope actAs to specific target service accounts only.'],
+      ['GCP-IAM-003','GCP','Public Exposure (allUsers / allAuthenticatedUsers)',35,/"(?:allUsers|allAuthenticatedUsers)"/i,'Remove public bindings; enforce Google IAP / BeyondCorp.'],
+      ['AZURE-IAM-001','Azure','Wildcard Action Permission (*)',35,/"Actions"\s*:\s*\[[^\]]*"\*"/i,'Replace "*" with explicit resource provider actions.'],
+      ['AZURE-IAM-002','Azure','Privilege Escalation via roleAssignments/write',30,/Microsoft\.Authorization\/roleAssignments\/write/i,'Enforce Entra ID PIM Just-In-Time (JIT) approval + Azure ABAC conditions.'],
+      ['AZURE-IAM-003','Azure','Root Tenant Scope (AssignableScopes: "/")',20,/"AssignableScopes"\s*:\s*\[[^\]]*"\/"/i,'Restrict AssignableScopes to explicit Resource Group IDs.'],
+      ['AWS-IAM-001','AWS','Wildcard Action (*)',35,/"Action"\s*:\s*(?:"\*"|\[[^\]]*"\*"[^\]]*\])/i,'Specify explicit least-privilege service actions & Resource ARNs.'],
+      ['AWS-IAM-002','AWS','Privilege Escalation (iam:PassRole / AttachRolePolicy)',30,/iam:(?:PassRole|CreatePolicyVersion|AttachRolePolicy)/i,'Add iam:PassedToService condition key & permission boundaries.']
+    ];
+
+    const TEMPLATES = {
+      kql: `// Microsoft Sentinel KQL — Detect Azure RBAC Privilege Escalation (roleAssignments/write)
+AzureActivity
+| where TimeGenerated > ago(24h)
+| where OperationNameValue =~ "Microsoft.Authorization/roleAssignments/write"
+| where ActivityStatusValue =~ "Success"
+| extend Props = parse_json(Properties)
+| project TimeGenerated, Caller, CallerIpAddress, ResourceGroup, RoleDef = tostring(Props.requestbody)
+| where RoleDef has_any ("8e3af657-a8ff-443c-a75c-2fe8c4bcb635", "b24988ac-6180-42a0-ab88-20f7382dd24c") // Owner / Contributor`,
+      yaral: `// Google SecOps (Chronicle) YARA-L 2.0 — Detect GCP IAM Privilege Escalation / Public Binding
+rule gcp_iam_zero_trust_violation {
+  meta:
+    author = "Wallison Araujo (@WallisonWS)"
+    severity = "HIGH"
+  events:
+    $e.metadata.product_name = "GCP IAM"
+    $e.metadata.product_event_type = /SetIamPolicy/i
+    ($e.target.resource.attribute.labels["role"] = /roles\/(owner|editor)/ or
+     $e.target.user.userid = /allUsers|allAuthenticatedUsers/)
+  condition:
+    $e
+}`,
+      bicep: `// Microsoft Azure Bicep — Hardened Least-Privilege Custom Role (Zero-Trust)
+resource customReaderRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
+  name: guid(resourceGroup().id, 'zero-trust-reader')
+  properties: {
+    roleName: 'ZeroTrust-App-SecretReader'
+    description: 'Scoped read-only Key Vault & Storage access (No wildcards, No roleAssignments/write)'
+    permissions: [
+      {
+        actions: [
+          'Microsoft.KeyVault/vaults/secrets/getSecret/action'
+          'Microsoft.Storage/storageAccounts/blobServices/containers/read'
+        ]
+        notActions: []
+      }
+    ]
+    assignableScopes: [ resourceGroup().id ]
+  }
+}`,
+      tf: `# Google Cloud Terraform — Least-Privilege IAM Binding with Time-Bound Condition
+resource "google_project_iam_member" "ci_deployer_scoped" {
+  project = var.gcp_project_id
+  role    = "roles/run.developer" # Never roles/owner
+  member  = "serviceAccount:\${google_service_account.ci_runner.email}"
+
+  condition {
+    title       = "zero_trust_prod_deploy_window"
+    description = "Restrict deployment privileges to approved Cloud Run service prefix"
+    expression  = "resource.name.startsWith('projects/\${var.gcp_project_id}/locations/us-central1/services/api-')"
+  }
+}`
+    };
+
+    let mode = 'kql';
+    window.loadP = (k) => { document.getElementById('polIn').value = SAMPLES[k]; audit(); };
+
+    function audit() {
+      const txt = document.getElementById('polIn').value;
+      const hits = RULES.filter(r => r[4].test(txt));
+      const score = Math.max(0, 100 - hits.reduce((a, r) => a + r[3], 0));
+      const lbl = document.getElementById('scoreLbl');
+      lbl.textContent = `Zero-Trust Score: ${score}/100`;
+      lbl.style.color = score >= 85 ? '#34d399' : score >= 60 ? '#fbbf24' : '#f87171';
+      document.getElementById('hitsBox').innerHTML = hits.length
+        ? hits.map(h => `<div class="hit"><div style="display:flex;justify-content:space-between;"><strong>${h[0]} (${h[1]}) — ${h[2]}</strong><span class="badge">-${h[3]} pts</span></div><div class="fix">✅ ${h[5]}</div></div>`).join('')
+        : '<div class="hit" style="border-left-color:#10b981;color:#34d399;">✅ Policy follows Multi-Cloud Zero-Trust Least Privilege!</div>';
+      document.getElementById('outCode').textContent = TEMPLATES[mode];
+    }
+
+    document.querySelectorAll('#outTabs .tab').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('#outTabs .tab').forEach(x => x.classList.remove('active'));
+      b.classList.add('active'); mode = b.dataset.m; audit();
+    }));
+    document.getElementById('polIn').addEventListener('input', audit);
+
+    // Trilingual Auto-Detect (EN / PT-BR / ES)
+    const L = {
+      en: { btn:'🇺🇸 EN → 🇧🇷 PT', title:'☁️ Cloud IAM Zero-Trust — GCP, Microsoft Azure & AWS Privilege Auditor', sub:'Audit Google Cloud (GCP IAM), Microsoft Azure (RBAC / Entra ID) & AWS IAM policies for privilege escalation — export Azure Bicep, GCP Terraform, Microsoft Sentinel KQL & Google SecOps YARA-L.' },
+      pt: { btn:'🇧🇷 PT → 🇪🇸 ES', title:'☁️ Cloud IAM Zero-Trust — Auditor GCP, Microsoft Azure & AWS IAM', sub:'Audite políticas de Google Cloud (GCP IAM), Microsoft Azure (RBAC / Entra ID) e AWS IAM contra escalação de privilégios — exporte Azure Bicep, Terraform, Microsoft Sentinel KQL e Google SecOps YARA-L.' },
+      es: { btn:'🇪🇸 ES → 🇺🇸 EN', title:'☁️ Cloud IAM Zero-Trust — Auditor GCP, Microsoft Azure y AWS IAM', sub:'Audita políticas de Google Cloud, Microsoft Azure Entra ID y AWS IAM para escalada de privilegios y genera reglas Microsoft Sentinel KQL y Google SecOps YARA-L.' }
+    };
+    const ord = ['en','pt','es'];
+    let cur = localStorage.getItem('iam_lang') || ((navigator.language||'').startsWith('pt') ? 'pt' : (navigator.language||'').startsWith('es') ? 'es' : 'en');
+    function applyL() {
+      localStorage.setItem('iam_lang', cur);
+      const d = L[cur]; document.getElementById('langBtn').textContent = d.btn;
+      document.querySelectorAll('[data-i]').forEach(el => { if (d[el.dataset.i]) el.textContent = d[el.dataset.i]; });
+    }
+    document.getElementById('langBtn').addEventListener('click', () => { cur = ord[(ord.indexOf(cur)+1)%3]; applyL(); });
+    applyL();
+    loadP('azure');
+  </script>
+</body>
+</html>
